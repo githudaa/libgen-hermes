@@ -1,0 +1,116 @@
+# ============================================================
+# LibGen 自动搜书 & 下载 - GitHub Actions 工作流
+# ============================================================
+# 两种触发方式:
+#   1. workflow_dispatch - 手动触发 (在 GitHub Actions 页面)
+#   2. repository_dispatch - API 触发 (hermes 通过 HTTP 调用)
+#
+# repository_dispatch 调用示例:
+#   curl -X POST \
+#     -H "Accept: application/vnd.github+json" \
+#     -H "Authorization: Bearer YOUR_GITHUB_TOKEN" \
+#     https://api.github.com/repos/USER/REPO/dispatches \
+#     -d '{"event_type":"search_book","client_payload":{"query":"机器学习","format":"pdf","download_index":1}}'
+# ============================================================
+
+name: LibGen 搜书下载
+
+on:
+  # 手动触发 - 在 GitHub Actions 页面点 "Run workflow"
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "搜索关键词 (书名/作者/主题)"
+        required: true
+        default: ""
+      format:
+        description: "文件格式过滤 (pdf/epub/mobi，留空=不过滤)"
+        required: false
+        default: ""
+      download_index:
+        description: "下载第几个结果 (1=第一个，0=下载全部)"
+        required: false
+        default: "1"
+      result_limit:
+        description: "搜索结果数量"
+        required: false
+        default: "10"
+
+  # API 触发 - hermes 通过 GitHub API 调用
+  repository_dispatch:
+    types: [search_book]
+
+jobs:
+  search-and-download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # 1. checkout 代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. 安装 Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. 安装依赖
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4. 设置环境变量并运行搜索下载脚本
+      - name: Search & Download
+        env:
+          BOOK_QUERY: ${{ github.event.client_payload.query || inputs.query }}
+          BOOK_FORMAT: ${{ github.event.client_payload.format || inputs.format }}
+          DOWNLOAD_INDEX: ${{ github.event.client_payload.download_index || inputs.download_index }}
+          RESULT_LIMIT: ${{ github.event.client_payload.result_limit || inputs.result_limit }}
+          DOWNLOAD_DIR: ./downloads
+          RESULTS_FILE: ./results.json
+        run: |
+          echo "搜索关键词: $BOOK_QUERY"
+          echo "文件格式: $BOOK_FORMAT"
+          echo "下载索引: $DOWNLOAD_INDEX"
+          python scripts/libgen_search.py
+
+      # 5. 显示结果摘要
+      - name: Show results
+        if: always()
+        run: |
+          echo "=== 搜索结果 ==="
+          cat results.json 2>/dev/null || echo "(无结果文件)"
+          echo ""
+          echo "=== 下载文件 ==="
+          ls -lh downloads/ 2>/dev/null || echo "(无下载文件)"
+
+      # 6. 上传书籍文件为 artifact (保留 7 天)
+      - name: Upload book files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: books-${{ github.run_id }}
+          path: downloads/
+          retention-days: 7
+          if-no-files-found: warn
+
+      # 7. 上传搜索结果 JSON 为 artifact
+      - name: Upload results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ github.run_id }}
+          path: results.json
+          retention-days: 7
+          if-no-files-found: warn
+
+      # 8. (可选) 通过 webhook 通知 hermes - 取消注释并填写你的 hermes webhook URL
+      # - name: Notify Hermes
+      #   if: always()
+      #   run: |
+      #     curl -X POST "${{ secrets.HERMES_WEBHOOK_URL }}" \
+      #       -H "Content-Type: application/json" \
+      #       -d "{\"run_id\": \"${{ github.run_id }}\", \"status\": \"${{ job.status }}\", \"query\": \"${{ env.BOOK_QUERY }}\"}"
