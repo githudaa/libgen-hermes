@@ -2,6 +2,8 @@
 
 让 hermes（或任何外部系统）通过 GitHub API 触发 LibGen 搜索和下载，绕过本地网络拦截。
 
+**🆕 中文教材支持**: 自动将中文教材名翻译为英文搜索词，在 LibGen 中搜对应的国际版本。
+
 ## 架构原理
 
 ```
@@ -72,12 +74,15 @@ export GITHUB_REPO=libgen-hermes
 ### 4. 测试搜索下载
 
 ```bash
-# 方式 A: 直接运行 hermes_api.py (一站式)
-python scripts/hermes_api.py "深入理解计算机系统" pdf 1
+# 方式 A: 英文搜索
+python scripts/hermes_api.py "Campbell Biology" pdf 1
 
-# 方式 B: 手动触发 GitHub Actions
+# 方式 B: 🆕 中文教材搜索（自动翻译→英文搜索）
+python scripts/cn_search.py "陈阅增普通生物学"
+python scripts/cn_search.py "量子力学" "Griffiths"
+
+# 方式 C: 手动触发 GitHub Actions
 # 去 GitHub 仓库 -> Actions -> "LibGen 搜书下载" -> Run workflow
-# 填入搜索关键词，等待完成后在 Artifacts 区域下载
 ```
 
 ---

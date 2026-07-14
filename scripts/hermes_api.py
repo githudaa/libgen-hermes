@@ -39,11 +39,14 @@ def get_headers():
 
 
 # ============================================================
-# 1. 触发搜索 (repository_dispatch)
+# 1. 触发搜索 (workflow_dispatch)
+#    使用 workflow_dispatch 而非 repository_dispatch
+#    因为后者需要 Contents: Read and write 权限
+#    而前者只需要 Actions: Read and write
 # ============================================================
 def trigger_search(query: str, fmt: str = "", download_index: int = 1, result_limit: int = 10) -> dict:
     """
-    触发 GitHub Actions 搜索书籍
+    通过 workflow_dispatch 触发 GitHub Actions 搜索书籍
 
     参数:
         query: 搜索关键词
@@ -54,10 +57,10 @@ def trigger_search(query: str, fmt: str = "", download_index: int = 1, result_li
     返回:
         dict: GitHub API 响应
     """
-    url = f"{API_BASE}/repos/{GITHUB_OWNER}/{GITHUB_REPO}/dispatches"
+    url = f"{API_BASE}/repos/{GITHUB_OWNER}/{GITHUB_REPO}/actions/workflows/libgen.yml/dispatches"
     payload = {
-        "event_type": "search_book",
-        "client_payload": {
+        "ref": "main",
+        "inputs": {
             "query": query,
             "format": fmt,
             "download_index": str(download_index),
@@ -78,7 +81,7 @@ def trigger_search(query: str, fmt: str = "", download_index: int = 1, result_li
 # ============================================================
 # 2. 获取最近的 workflow run
 # ============================================================
-def get_latest_run(event_type: str = "repository_dispatch") -> Optional[dict]:
+def get_latest_run(event_type: str = "workflow_dispatch") -> Optional[dict]:
     """获取最近的 workflow run"""
     url = f"{API_BASE}/repos/{GITHUB_OWNER}/{GITHUB_REPO}/actions/runs"
     params = {"event": event_type, "per_page": 1}
