@@ -301,7 +301,7 @@ def resolve_download_url(md5, search_mirror):
 # 下载书籍文件
 # ============================================================
 def download_book(book: BookResult) -> BookResult:
-    """下载书籍文件"""
+    """下载书籍文件（curl 断点续传，大文件抗断流）"""
     if not book.download_url:
         book.download_status = "failed"
         book.error = "未找到下载链接"
@@ -315,33 +315,54 @@ def download_book(book: BookResult) -> BookResult:
     filepath = os.path.join(DOWNLOAD_DIR, filename)
 
     print(f"  [download] {book.title} -> {filepath}")
-    print(f"  [download] URL: {book.download_url}")
 
-    resp = try_request(book.download_url, stream=True)
-    if not resp:
-        book.download_status = "failed"
-        book.error = "HTTP 请求失败"
-        return book
-
-    # 验证响应内容类型
-    content_type = resp.headers.get("Content-Type", "")
-    if "text/html" in content_type and not book.download_url.endswith((".pdf", ".epub", ".mobi")):
-        # 可能是重定向到错误页
-        print(f"  [download] 警告: 响应类型为 HTML，可能不是文件")
-        # 继续下载，但标记警告
-
+    import subprocess
     total = 0
-    with open(filepath, "wb") as f:
-        for chunk in resp.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-                total += len(chunk)
+    head = b""
+    for attempt in range(8):
+        url = book.download_url
+        if attempt > 0:
+            # get.php 的 key 可能过期，重新解析下载链接
+            new_url = resolve_download_url(book.md5, book.mirror)
+            if new_url:
+                url = new_url
+        print(f"  [download] attempt {attempt+1}: {url}")
+        try:
+            subprocess.run(
+                ["curl", "-sL", "-C", "-", "--max-time", "900", "-o", filepath, url],
+                capture_output=True, text=True, timeout=960)
+        except subprocess.TimeoutExpired:
+            print(f"  [download] attempt {attempt+1} 超时，继续续传")
+            continue
+        except Exception as e:
+            print(f"  [download] attempt {attempt+1} 异常: {e}")
+            time.sleep(3)
+            continue
 
-    # 验证文件大小
-    if total < 1024:
+        if os.path.exists(filepath):
+            total = os.path.getsize(filepath)
+        try:
+            with open(filepath, "rb") as f:
+                head = f.read(1024)
+        except Exception:
+            head = b""
+
+        # HTML 错误页检测（小文件+html头=错误页）
+        if total < 102400 and head[:1] == b"<":
+            print(f"  [download] 收到HTML错误页({total}B)，重试")
+            time.sleep(3)
+            continue
+
+        if total >= 1024 and head[:1] != b"<":
+            print(f"  [download] 断点续传后 {total} bytes")
+            break
+        time.sleep(3)
+
+    if not os.path.exists(filepath) or total < 1024:
         book.download_status = "failed"
-        book.error = f"文件太小 ({total} bytes)，可能是错误页面"
-        os.remove(filepath)
+        book.error = f"下载失败 ({total} bytes)"
+        if os.path.exists(filepath):
+            os.remove(filepath)
         return book
 
     book.download_status = "success"
