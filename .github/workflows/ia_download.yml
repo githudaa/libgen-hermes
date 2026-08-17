@@ -1,0 +1,66 @@
+# ============================================================
+# archive.org 下载器 - GitHub Actions 工作流
+# 用途: 云端(美国服务器)从 archive.org 下载文件，绕过中国大陆网络封锁
+# 触发: workflow_dispatch (API 或网页手动)
+# ============================================================
+
+name: IA 下载
+
+on:
+  workflow_dispatch:
+    inputs:
+      identifier:
+        description: "archive.org 条目 ID (URL 中的 /details/{identifier})"
+        required: true
+        default: ""
+      filename:
+        description: "要下载的文件名 (留空=自动选最大 pdf/epub)"
+        required: false
+        default: ""
+
+jobs:
+  ia-download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run IA download
+        env:
+          IA_IDENTIFIER: ${{ inputs.identifier }}
+          IA_FILENAME: ${{ inputs.filename }}
+          DOWNLOAD_DIR: ./downloads
+          RESULTS_FILE: ./results.json
+        run: python scripts/ia_download.py
+
+      - name: Show results
+        if: always()
+        run: |
+          echo "=== 下载结果 ==="
+          cat results.json 2>/dev/null || echo "(无结果文件)"
+          ls -lh downloads/ 2>/dev/null || echo "(无下载文件)"
+
+      - name: Upload book files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: books-${{ github.run_id }}
+          path: downloads/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ github.run_id }}
+          path: results.json
+          retention-days: 7
+          if-no-files-found: warn
