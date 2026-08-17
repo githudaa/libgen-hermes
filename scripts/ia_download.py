@@ -20,17 +20,25 @@ def get_metadata(identifier):
     return data
 
 def download_file(identifier, filename, dest):
-    """下载单文件（直连 archive.org/download/）"""
+    """下载单文件（直连 archive.org/download/），带重试"""
     url = f"https://archive.org/download/{identifier}/{urllib.parse.quote(filename)}"
     tmp = dest + ".part"
-    with fetch(url) as r, open(tmp, "wb") as f:
-        while True:
-            chunk = r.read(1024 * 256)
-            if not chunk:
-                break
-            f.write(chunk)
-    os.rename(tmp, dest)
-    return os.path.getsize(dest)
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with fetch(url) as r, open(tmp, "wb") as f:
+                while True:
+                    chunk = r.read(1024 * 256)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+            os.rename(tmp, dest)
+            return os.path.getsize(dest)
+        except Exception as e:
+            print(f"  第{attempt}次失败: {str(e)[:100]}")
+            if attempt < max_attempts:
+                time.sleep(5 * attempt)
+    raise RuntimeError(f"下载失败（重试{max_attempts}次）: {filename}")
 
 def main():
     if not IDENTIFIER:
