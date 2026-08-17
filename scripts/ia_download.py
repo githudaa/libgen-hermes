@@ -39,7 +39,12 @@ def main():
     print(f"identifier={IDENTIFIER}, filename={FILENAME or '(自动取最大文件)'}")
     meta = get_metadata(IDENTIFIER)
     files = [f for f in meta.get("files", []) if f.get("name") and f["name"].endswith((".pdf", ".epub", ".mobi", ".djvu", ".txt"))]
-    print(f"文件列表: {[f['name'] for f in files]}")
+    print(f"文件列表({len(files)}):")
+    for f in files:
+        print(f"  - {f['name']} | {int(f.get('size', 0) or 0)//1024}KB | {f.get('format','')}")
+    if os.environ.get("IA_LIST_ONLY", "0") == "1":
+        print("LIST_ONLY=1，跳过下载")
+        sys.exit(0)
     if not files:
         print("ERROR: 无可下载文件")
         sys.exit(1)

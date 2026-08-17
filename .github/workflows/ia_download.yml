@@ -17,6 +17,10 @@ on:
         description: "要下载的文件名 (留空=自动选最大 pdf/epub)"
         required: false
         default: ""
+      list_only:
+        description: "1=只列文件清单不下载"
+        required: false
+        default: "0"
 
 jobs:
   ia-download:
@@ -36,6 +40,7 @@ jobs:
         env:
           IA_IDENTIFIER: ${{ inputs.identifier }}
           IA_FILENAME: ${{ inputs.filename }}
+          IA_LIST_ONLY: ${{ inputs.list_only }}
           DOWNLOAD_DIR: ./downloads
           RESULTS_FILE: ./results.json
         run: python scripts/ia_download.py
