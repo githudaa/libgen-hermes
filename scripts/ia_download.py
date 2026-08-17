@@ -10,8 +10,7 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 def fetch(url, timeout=120):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; libgen-hermes/1.0)"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r
+    return urllib.request.urlopen(req, timeout=timeout)
 
 def get_metadata(identifier):
     """获取 archive.org 条目的文件列表"""
