@@ -30,6 +30,19 @@ QUERIES = [
     ("Color Workshop Hornung", 'title:(color) AND creator:(hornung)'),
     ("Color Choices Quiller", 'title:(color choices)'),
     ("Color and Meaning Gage", 'title:(color and meaning)'),
+    # ===== 角色与服饰设计(新板块) =====
+    ("Character Costume Figure Drawing Tan", 'title:(character costume figure drawing)'),
+    ("Complete Costume History Racinet", 'title:(complete costume history)'),
+    ("History of Costume Kohler", 'title:(history of costume)'),
+    ("Survey of Historic Costume", 'title:(survey of historic costume)'),
+    ("Historical Costume in Pictures", 'title:(historical costume in pictures)'),
+    ("Costume Designers Handbook", 'title:(costume designer)'),
+    ("Figure Drawing Loomis", 'title:(figure drawing for all)'),
+    ("Drawing Head and Figure Hamm", 'title:(drawing the head and figure)'),
+    ("Facial Expression Faigin", 'title:(facial expression) AND creator:(faigin)'),
+    ("Creating Stylized Characters", 'title:(creating stylized characters)'),
+    ("Designing Creatures Characters Holmes", 'title:(designing creatures and characters)'),
+    ("Chinese Dress Yuan Ming", 'title:(chinese dress)'),
 ]
 
 out = {}
