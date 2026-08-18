@@ -16,11 +16,11 @@ jobs:
         with:
           python-version: "3.11"
       - name: Run probe
-        run: python scripts/libgen_probe.py
+        run: python scripts/archive_probe.py
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: probe-results
-          path: /tmp/libgen_probe.json
+          path: /tmp/archive_probe.json
           retention-days: 1
