@@ -11,11 +11,25 @@ def curl_json(url, timeout=30):
         return {"_err": r.stdout[:200]}
 
 QUERIES = [
+    # ===== 漫画理论(已有板块) =====
     ("Making Comics McCloud", 'title:(making comics) AND creator:(mccloud)'),
     ("Manga in Theory and Practice Araki", 'title:(manga in theory and practice)'),
     ("Graphic Storytelling Eisner", 'title:(graphic storytelling) AND creator:(eisner)'),
     ("Comics and Sequential Art Eisner", 'title:(comics and sequential art)'),
     ("Framed Ink Mateu-Mestre", 'title:(framed ink)'),
+    # ===== 色彩与光影(新板块) =====
+    ("Color and Light Gurney", 'title:(color and light) AND creator:(gurney)'),
+    ("Imaginative Realism Gurney", 'title:(imaginative realism)'),
+    ("Light for Visual Artists Yot", 'title:(light for visual artists)'),
+    ("Interaction of Color Albers", 'title:(interaction of color)'),
+    ("Elements of Color Itten", 'title:(elements of color)'),
+    ("Art of Color Itten", 'title:(art of color)'),
+    ("Vision and Art Livingstone", 'title:(vision and art)'),
+    ("Light Science and Magic", 'title:(light science and magic)'),
+    ("Digital Lighting and Rendering Birn", 'title:(digital lighting and rendering)'),
+    ("Color Workshop Hornung", 'title:(color) AND creator:(hornung)'),
+    ("Color Choices Quiller", 'title:(color choices)'),
+    ("Color and Meaning Gage", 'title:(color and meaning)'),
 ]
 
 out = {}
